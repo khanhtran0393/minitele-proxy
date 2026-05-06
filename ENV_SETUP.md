@@ -5,7 +5,7 @@
 | Tên biến | Bắt buộc | Mô tả |
 |---|---|---|
 | `BOT_TOKEN` | ✅ | Token xác thực Telegram Bot |
-| `PROXY_URL` | ✅ | Địa chỉ proxy để che IP Vercel |
+| `PROXY_URL` | ✅ | Địa chỉ proxy để che IP |
 | `SUPABASE_URL` | ❌ | URL Supabase (chỉ cần nếu dùng database) |
 | `SUPABASE_ANON_KEY` | ❌ | Khóa Supabase (chỉ cần nếu dùng database) |
 
@@ -32,10 +32,10 @@ Format:  name:type:host:port:login:pass
 ```
 
 ```env
-PROXY_URL=connecticut:socks5:niceproxy.io:17521:skytran_XL4q-country-US:Thedoem123
+PROXY_URL=connecticut:socks5:niceproxy.io:17521:skytran-country-US:Tedoem123
 ```
 
-> Hệ thống sẽ tự động chuyển thành `socks5://skytran_XL4q-country-US:Thedoem123@niceproxy.io:17521`
+> Hệ thống sẽ tự động chuyển thành `socks5://skytran-country-US:Thedoem123@niceproxy.io:17521`
 
 ---
 
