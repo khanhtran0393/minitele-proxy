@@ -64,15 +64,78 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 4. XỬ LÝ LỆNH TỪ NGƯỜI DÙNG (/my_ip, /refresh_ip)
+    // 4. XỬ LÝ KHI NGƯỜI DÙNG BẤM NÚT (CALLBACK)
+    if (body.callback_query) {
+      const callbackData = body.callback_query.data;
+      const chatId = body.callback_query.message.chat.id;
+      const callbackQueryId = body.callback_query.id;
+
+      const sendMsg = async (msgText: string) => {
+        try {
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: msgText, parse_mode: 'HTML' }),
+            ...(agent ? { agent } : {})
+          });
+        } catch (e) { console.error(e); }
+      };
+
+      try {
+        if (callbackData === 'action_refresh_ip') {
+          await sendMsg("🔄 Đang yêu cầu máy nhà đổi IP...");
+          const result = await refresh9ProxyIP();
+          
+          if (result && !result.error) {
+             await sendMsg("✅ Đã đổi IP thành công trên 9Proxy!");
+          } else {
+             await sendMsg("❌ Lỗi: Không thể đổi IP. Hãy kiểm tra Ngrok ở máy nhà.");
+          }
+        } 
+        else if (callbackData === 'action_check_ip') {
+          await sendMsg("🌐 Đang kiểm tra IP hiện tại...");
+          const ip = await getMyIp(process.env.PROXY_URL || undefined);
+          await sendMsg(`📍 IP hiện tại Vercel đang dùng: <b>${ip || 'Lỗi lấy IP'}</b>`);
+        }
+      } catch (err) {
+        console.error("Callback error:", err);
+      }
+
+      try {
+        await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ callback_query_id: callbackQueryId }),
+          ...(agent ? { agent } : {})
+        });
+      } catch (e) { console.error(e); }
+
+      return NextResponse.json({ ok: true });
+    }
+
+    // 5. XỬ LÝ LỆNH TỪ NGƯỜI DÙNG (/menu, /my_ip, /refresh_ip)
     if (body.message?.text) {
       const chatId = body.message.chat.id;
       const text = body.message.text;
       
       let replyText = '';
+      let replyMarkup = undefined;
       
       try {
-        if (text === '/my_ip') {
+        if (text === '/menu' || text === '/start') {
+          replyText = "🎛 <b>BẢNG ĐIỀU KHIỂN PROXY</b>\nHãy chọn thao tác bên dưới:";
+          replyMarkup = {
+            inline_keyboard: [
+              [
+                { text: "🔄 Đổi IP Mới", callback_data: "action_refresh_ip" },
+                { text: "🌐 Check IP Hiện Tại", callback_data: "action_check_ip" }
+              ],
+              [
+                { text: "💻 Mở trang quản trị Web", web_app: { url: "https://minitele-proxy.vercel.app" } } 
+              ]
+            ]
+          };
+        } else if (text === '/my_ip') {
           // We can try fetching the exact proxy used
           const ip = await getMyIp(process.env.PROXY_URL || undefined); // Use env PROXY_URL for verification
           replyText = ip ? `IP hiện tại (qua proxy): ${ip}` : `Không thể lấy IP qua proxy.`;
@@ -90,7 +153,7 @@ export async function POST(request: Request) {
           await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, text: replyText }),
+            body: JSON.stringify({ chat_id: chatId, text: replyText, parse_mode: 'HTML', reply_markup: replyMarkup }),
             ...(agent ? { agent } : {})
           });
         } catch (sendErr) {
