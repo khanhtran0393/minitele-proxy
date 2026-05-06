@@ -13,7 +13,7 @@ export async function refresh9ProxyIP() {
     if (!response.ok) {
       throw new Error(`HTTP Error: ${response.status}`);
     }
-    const data = await response.json();
+    const data = await response.json() as Record<string, unknown>;
     return data; // Dữ liệu trả về từ 9Proxy
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);

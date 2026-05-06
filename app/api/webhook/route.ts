@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       try {
         if (callbackData === 'action_refresh_ip') {
           await sendMsg("🔄 Đang yêu cầu máy nhà đổi IP...");
-          const result = await refresh9ProxyIP();
+          const result = await refresh9ProxyIP() as { error?: string };
           
           if (result && !result.error) {
              await sendMsg("✅ Đã đổi IP thành công trên 9Proxy!");

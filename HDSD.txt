@@ -1,0 +1,26 @@
+﻿BOT_TOKEN. Để hệ thống Proxy và Bảng điều khiển hoạt động, bạn bắt buộc phải thêm 2 biến nữa vào Vercel:
+
+Bấm vào nút Add (hoặc Create) trong trang Environment Variables và thêm 2 dòng sau:
+
+Tên biến: PROXY_URL
+
+Giá trị: Điền địa chỉ proxy của bạn (ví dụ: socks5://user:pass@ip:port hoặc http://user:pass@ip:port).
+Tác dụng: Để ứng dụng chui qua ống proxy này khi giao tiếp với Telegram API.
+
+Tên biến: PROXY_CONTROL_URL
+
+Giá trị: Điền đường link Ngrok trỏ đến API của 9Proxy ở máy nhà (dựa theo ảnh hướng dẫn của bạn lúc nãy: https://rare-grouse-personally.ngrok-free.app/api/port_free?...)
+ví du: https://rare-grouse-personally.ngrok-free.app/api/port_free?t=2&ports=20199
+Tác dụng: Để khi bạn bấm nút "Đổi IP Mới" trên khung chat Telegram, Vercel sẽ biết gọi về đâu để ra lệnh cho phần mềm 9Proxy đổi IP.
+
+https://rare-grouse-personally.ngrok-free.app/api/port_free?t=2&ports=20199
+
+chạy lệnh này để mở port của ngok (port:10101)
+rare-grouse-personally.ngrok-free.app là domain của bạn.
+
+API của 9proxy
+http://192.168.1.14:10101/api/port_free?t=2&ports=20199
+192.168.1.14: cổng host pc
+
+https://api.telegram.org/bot<BOT_TOKEN_CỦA_BẠN>/setWebhook?url=https://<DOMAIN_VERCEL_CỦA_BẠN>/api/webhook
+kiểm tra webhook
