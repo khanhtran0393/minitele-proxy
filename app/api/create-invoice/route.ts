@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         .select('bot_token, proxy_url')
         .eq('id', storeId)
         .single();
-      
+
       if (store) {
         if (store.bot_token) botToken = store.bot_token;
         if (store.proxy_url) agent = new HttpsProxyAgent(store.proxy_url);
@@ -49,21 +49,21 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         title: item.name,
         description: item.description,
-        payload: itemId, 
-        provider_token: '', 
-        currency: 'XTR',    
+        payload: itemId,
+        provider_token: '',
+        currency: 'XTR',
         prices: [{ label: item.name, amount: item.price }],
       }),
       ...(agent ? { agent } : {})
     });
 
     const data = await response.json() as { ok: boolean, result?: string, description?: string };
-    
+
     if (!data.ok) {
       console.error('Telegram API Error:', data);
       return NextResponse.json({ error: `Telegram Error: ${data.description || 'Unknown error'}` }, { status: 500 });
     }
-    
+
     // Trả về link thanh toán cho khách, không lưu bất cứ thứ gì vào DB
     return NextResponse.json({ invoiceLink: data.result });
 

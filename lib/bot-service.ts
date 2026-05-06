@@ -12,8 +12,9 @@ export async function sendBotMessage(storeId: string, chatId: number, text: stri
 
   if (error || !store) throw new Error('Không tìm thấy cấu hình store');
 
-  // 2. Cấu hình Proxy Agent từ 9proxy (lấy từ database)
-  const proxyAgent = new HttpsProxyAgent(store.proxy_url);
+  // 2. Cấu hình Proxy Agent từ 9proxy (lấy từ database hoặc biến môi trường)
+  const proxyUrl = store.proxy_url || process.env.PROXY_URL;
+  const proxyAgent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
 
   // 3. Gọi API Telegram qua Proxy
   const url = `https://api.telegram.org/bot${store.bot_token}/sendMessage`;
