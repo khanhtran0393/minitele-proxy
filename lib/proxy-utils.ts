@@ -15,9 +15,10 @@ export async function refresh9ProxyIP() {
     }
     const data = await response.json();
     return data; // Dữ liệu trả về từ 9Proxy
-  } catch (error: any) {
-    console.error("Lỗi giao tiếp với máy chủ Ngrok/9Proxy:", error.message);
-    return { error: error.message };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Lỗi giao tiếp với máy chủ Ngrok/9Proxy:", errorMessage);
+    return { error: errorMessage };
   }
 }
 
@@ -36,8 +37,9 @@ export async function getMyIp(proxyUrl?: string) {
     }
     const data = await response.json() as { ip: string };
     return data.ip;
-  } catch (error: any) {
-    console.error("Lỗi lấy IP qua Proxy:", error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Lỗi lấy IP qua Proxy:", errorMessage);
     return null;
   }
 }

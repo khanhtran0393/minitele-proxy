@@ -73,7 +73,6 @@ export async function POST(request: Request) {
       
       try {
         if (text === '/my_ip') {
-          const proxyUrl = (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('your-project-id')) ? undefined : process.env.PROXY_URL;
           // We can try fetching the exact proxy used
           const ip = await getMyIp(process.env.PROXY_URL || undefined); // Use env PROXY_URL for verification
           replyText = ip ? `IP hiện tại (qua proxy): ${ip}` : `Không thể lấy IP qua proxy.`;
@@ -81,8 +80,9 @@ export async function POST(request: Request) {
           const res = await refresh9ProxyIP();
           replyText = `Kết quả làm mới IP: \n${JSON.stringify(res, null, 2)}`;
         }
-      } catch (err: any) {
-        replyText = `Lỗi hệ thống khi xử lý lệnh: ${err.message}`;
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        replyText = `Lỗi hệ thống khi xử lý lệnh: ${errorMessage}`;
       }
 
       if (replyText) {
