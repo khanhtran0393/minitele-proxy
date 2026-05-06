@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import fetch from 'node-fetch';
+import { refresh9ProxyIP, getMyIp } from '@/lib/proxy-utils';
 
 export async function POST(request: Request) {
   try {
@@ -61,6 +62,41 @@ export async function POST(request: Request) {
       // Note: Nếu không dùng Supabase thì webhook thành công sẽ được page.tsx gọi đến api/payment-success để update global.purchases
 
       return NextResponse.json({ ok: true });
+    }
+
+    // 4. XỬ LÝ LỆNH TỪ NGƯỜI DÙNG (/my_ip, /refresh_ip)
+    if (body.message?.text) {
+      const chatId = body.message.chat.id;
+      const text = body.message.text;
+      
+      let replyText = '';
+      
+      try {
+        if (text === '/my_ip') {
+          const proxyUrl = (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('your-project-id')) ? undefined : process.env.PROXY_URL;
+          // We can try fetching the exact proxy used
+          const ip = await getMyIp(process.env.PROXY_URL || undefined); // Use env PROXY_URL for verification
+          replyText = ip ? `IP hiện tại (qua proxy): ${ip}` : `Không thể lấy IP qua proxy.`;
+        } else if (text === '/refresh_ip') {
+          const res = await refresh9ProxyIP();
+          replyText = `Kết quả làm mới IP: \n${JSON.stringify(res, null, 2)}`;
+        }
+      } catch (err: any) {
+        replyText = `Lỗi hệ thống khi xử lý lệnh: ${err.message}`;
+      }
+
+      if (replyText) {
+        try {
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: replyText }),
+            ...(agent ? { agent } : {})
+          });
+        } catch (sendErr) {
+          console.error("Lỗi khi gửi tin nhắn qua Telegram:", sendErr);
+        }
+      }
     }
 
     return NextResponse.json({ ok: true });
