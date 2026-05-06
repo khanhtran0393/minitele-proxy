@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { createProxyAgent } from '@/lib/create-proxy-agent';
 import fetch from 'node-fetch';
-import { refresh9ProxyIP, getMyIp } from '@/lib/proxy-utils';
+import { getMyIp } from '@/lib/proxy-utils';
 
 export async function POST(request: Request) {
   try {
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Bot token not found' }, { status: 500 });
     }
 
-    // 2. XỬ LÝ THANH TOÁN: Bước xác nhận (Pre-checkout Query)
+    // 1. XỬ LÝ THANH TOÁN: Bước xác nhận (Pre-checkout Query)
     if (body.pre_checkout_query) {
       await fetch(`https://api.telegram.org/bot${botToken}/answerPreCheckoutQuery`, {
         method: 'POST',
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 3. XỬ LÝ THANH TOÁN THÀNH CÔNG: Ghi vào Supabase / Mock DB
+    // 2. XỬ LÝ THANH TOÁN THÀNH CÔNG
     if (body.message?.successful_payment) {
       const payment = body.message.successful_payment;
       
@@ -59,12 +59,11 @@ export async function POST(request: Request) {
           created_at: new Date().toISOString()
         });
       }
-      // Note: Nếu không dùng Supabase thì webhook thành công sẽ được page.tsx gọi đến api/payment-success để update global.purchases
 
       return NextResponse.json({ ok: true });
     }
 
-    // 4. XỬ LÝ KHI NGƯỜI DÙNG BẤM NÚT (CALLBACK)
+    // 3. XỬ LÝ KHI NGƯỜI DÙNG BẤM NÚT (CALLBACK)
     if (body.callback_query) {
       const callbackData = body.callback_query.data;
       const chatId = body.callback_query.message.chat.id;
@@ -82,20 +81,10 @@ export async function POST(request: Request) {
       };
 
       try {
-        if (callbackData === 'action_refresh_ip') {
-          await sendMsg("🔄 Đang yêu cầu máy nhà đổi IP...");
-          const result = await refresh9ProxyIP() as { error?: string };
-          
-          if (result && !result.error) {
-             await sendMsg("✅ Đã đổi IP thành công trên 9Proxy!");
-          } else {
-             await sendMsg("❌ Lỗi: Không thể đổi IP. Hãy kiểm tra Ngrok ở máy nhà.");
-          }
-        } 
-        else if (callbackData === 'action_check_ip') {
+        if (callbackData === 'action_check_ip') {
           await sendMsg("🌐 Đang kiểm tra IP hiện tại...");
-          const ip = await getMyIp(process.env.PROXY_URL || undefined);
-          await sendMsg(`📍 IP hiện tại Vercel đang dùng: <b>${ip || 'Lỗi lấy IP'}</b>`);
+          const ip = await getMyIp(process.env.PROXY_URL);
+          await sendMsg(`📍 IP hiện tại đang dùng: <b>${ip || 'Lỗi lấy IP'}</b>`);
         }
       } catch (err) {
         console.error("Callback error:", err);
@@ -113,7 +102,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 5. XỬ LÝ LỆNH TỪ NGƯỜI DÙNG (/menu, /my_ip, /refresh_ip)
+    // 4. XỬ LÝ LỆNH TEXT TỪ NGƯỜI DÙNG (/menu, /start, /my_ip)
     if (body.message?.text) {
       const chatId = body.message.chat.id;
       const text = body.message.text;
@@ -123,29 +112,24 @@ export async function POST(request: Request) {
       
       try {
         if (text === '/menu' || text === '/start') {
-          replyText = "🎛 <b>BẢNG ĐIỀU KHIỂN PROXY</b>\nHãy chọn thao tác bên dưới:";
+          replyText = "🎛 <b>BẢNG ĐIỀU KHIỂN BOT</b>\nHãy chọn thao tác bên dưới:";
           replyMarkup = {
             inline_keyboard: [
               [
-                { text: "🔄 Đổi IP Mới", callback_data: "action_refresh_ip" },
-                { text: "🌐 Check IP Hiện Tại", callback_data: "action_check_ip" }
+                { text: "🌐 Check IP Proxy", callback_data: "action_check_ip" }
               ],
               [
-                { text: "💻 Mở trang quản trị Web", web_app: { url: "https://minitele-proxy.vercel.app" } } 
+                { text: "💻 Mở trang Web", web_app: { url: "https://minitele-proxy.vercel.app" } }
               ]
             ]
           };
         } else if (text === '/my_ip') {
-          // We can try fetching the exact proxy used
-          const ip = await getMyIp(process.env.PROXY_URL || undefined); // Use env PROXY_URL for verification
-          replyText = ip ? `IP hiện tại (qua proxy): ${ip}` : `Không thể lấy IP qua proxy.`;
-        } else if (text === '/refresh_ip') {
-          const res = await refresh9ProxyIP();
-          replyText = `Kết quả làm mới IP: \n${JSON.stringify(res, null, 2)}`;
+          const ip = await getMyIp(process.env.PROXY_URL);
+          replyText = ip ? `📍 IP hiện tại (qua proxy): <b>${ip}</b>` : `❌ Không thể lấy IP qua proxy.`;
         }
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-        replyText = `Lỗi hệ thống khi xử lý lệnh: ${errorMessage}`;
+        replyText = `Lỗi hệ thống: ${errorMessage}`;
       }
 
       if (replyText) {
@@ -157,7 +141,7 @@ export async function POST(request: Request) {
             ...(agent ? { agent } : {})
           });
         } catch (sendErr) {
-          console.error("Lỗi khi gửi tin nhắn qua Telegram:", sendErr);
+          console.error("Lỗi khi gửi tin nhắn:", sendErr);
         }
       }
     }
