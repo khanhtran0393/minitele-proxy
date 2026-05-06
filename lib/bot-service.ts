@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { HttpsProxyAgent } from 'https-proxy-agent';
+import { createProxyAgent } from './create-proxy-agent';
 import fetch from 'node-fetch';
 
 export async function sendBotMessage(storeId: string, chatId: number, text: string) {
@@ -14,7 +14,7 @@ export async function sendBotMessage(storeId: string, chatId: number, text: stri
 
   // 2. Cấu hình Proxy Agent từ 9proxy (lấy từ database hoặc biến môi trường)
   const proxyUrl = store.proxy_url || process.env.PROXY_URL;
-  const proxyAgent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
+  const proxyAgent = createProxyAgent(proxyUrl);
 
   // 3. Gọi API Telegram qua Proxy
   const url = `https://api.telegram.org/bot${store.bot_token}/sendMessage`;

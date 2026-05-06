@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import fetch from 'node-fetch';
-import { HttpsProxyAgent } from 'https-proxy-agent';
+import { createProxyAgent } from '@/lib/create-proxy-agent';
 
 export async function GET(request: Request) {
   try {
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     if (process.env.BOT_TOKEN) {
       const webhookUrl = `${domain}/api/webhook`;
       const telegramUrl = `https://api.telegram.org/bot${process.env.BOT_TOKEN}/setWebhook?url=${webhookUrl}`;
-      const agent = process.env.PROXY_URL ? new HttpsProxyAgent(process.env.PROXY_URL) : undefined;
+      const agent = createProxyAgent(process.env.PROXY_URL);
       const res = await fetch(telegramUrl, { ...(agent ? { agent } : {}) });
       const data = await res.json() as { ok: boolean, description?: string };
       results.push({
@@ -34,8 +34,7 @@ export async function GET(request: Request) {
           const webhookUrl = `${domain}/api/webhook?id=${store.id}`;
           const telegramUrl = `https://api.telegram.org/bot${store.bot_token}/setWebhook?url=${webhookUrl}`;
 
-          const proxyUrl = store.proxy_url || process.env.PROXY_URL;
-          const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
+          const agent = createProxyAgent(store.proxy_url || process.env.PROXY_URL);
 
           const res = await fetch(telegramUrl, { ...(agent ? { agent } : {}) });
           const data = await res.json() as { ok: boolean, description?: string };

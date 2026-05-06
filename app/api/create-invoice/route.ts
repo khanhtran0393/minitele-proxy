@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getItemById } from '@/app/data/items';
 import { supabase } from '@/lib/supabase';
-import { HttpsProxyAgent } from 'https-proxy-agent';
+import { createProxyAgent } from '@/lib/create-proxy-agent';
 import fetch from 'node-fetch';
 
 export async function POST(req: NextRequest) {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     // 1. Lấy cấu hình Bot/Proxy từ Supabase (nếu có cấu hình) hoặc từ biến môi trường
     let botToken = process.env.BOT_TOKEN;
-    let agent = undefined;
+    let agent = createProxyAgent(process.env.PROXY_URL);
 
     // Thử lấy từ Supabase nếu đã cấu hình URL
     if (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('your-project-id')) {
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
       if (store) {
         if (store.bot_token) botToken = store.bot_token;
-        if (store.proxy_url) agent = new HttpsProxyAgent(store.proxy_url);
+        if (store.proxy_url) agent = createProxyAgent(store.proxy_url);
       }
     }
 

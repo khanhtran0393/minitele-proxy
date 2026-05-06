@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { HttpsProxyAgent } from 'https-proxy-agent';
+import { createProxyAgent } from './create-proxy-agent';
 
 /**
  * Giao tiếp với 9Proxy qua Ngrok (hoặc Local) để làm mới/quản lý IP
@@ -27,7 +27,7 @@ export async function refresh9ProxyIP() {
  */
 export async function getMyIp(proxyUrl?: string) {
   try {
-    const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
+    const agent = createProxyAgent(proxyUrl);
     const response = await fetch('https://api.ipify.org?format=json', {
       ...(agent ? { agent } : {})
     });
